@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@1.98.0/lib/index.iife.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@solana/spl-token@0.4.9/lib/index.iife.min.js"></script>
+<title>TokenForge – Create Solana Token</title>
+<style>
+:root{
+  --bg:#000000; --card:#0f0e08; --field:#070703; --line:#3a3414; --text:#fffbea; --muted:#b9b08a;
+  --rose:#ffd21f; --coral:#f5b400; --ink:#000000;
+  --grad:linear-gradient(135deg,#ffe135,#f2a900);
+  --head:Georgia,"Times New Roman",serif;
+  --font:Arial,Helvetica,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);font-size:16px;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh;display:flex;flex-direction:column;
+ background-image:radial-gradient(70% 30% at 0% 0%,rgba(255,210,31,.10),transparent),radial-gradient(60% 30% at 100% 35%,rgba(242,169,0,.06),transparent)}
+a{color:var(--coral);text-decoration:none}
+:focus-visible{outline:2px solid var(--coral);outline-offset:2px}
+h1,h2,h3,.brand{font-family:var(--head);font-weight:700}
+
+header{position:sticky;top:0;z-index:20;background:rgba(0,0,0,.95);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:calc(env(safe-area-inset-top,0px) + 9px) 14px 9px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.hb{width:42px;height:42px;border-radius:12px;border:1px solid var(--rose);background:var(--card);display:grid;place-items:center;cursor:pointer}
+.hb span,.hb span::before,.hb span::after{display:block;width:20px;height:2px;border-radius:2px;background:var(--rose);position:relative;content:""}
+.hb span::before{position:absolute;top:-6px}.hb span::after{position:absolute;top:6px}
+.brand{font-size:1.05rem;color:var(--text);display:flex;align-items:center;gap:8px}
+.brand i{width:26px;height:26px;border-radius:8px;background:var(--grad);display:grid;place-items:center;color:var(--ink);font-style:normal;font-size:.95rem}
+.pill{min-height:42px;padding:0 16px;border-radius:12px;border:1px solid var(--rose);background:var(--card);color:var(--rose);font:600 .95rem var(--font);cursor:pointer}
+
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.65);opacity:0;pointer-events:none;transition:.25s;z-index:30}
+.drawer{position:fixed;top:0;left:0;bottom:0;width:min(78vw,290px);background:var(--card);border-right:1px solid var(--line);transform:translateX(-100%);transition:transform .28s;z-index:40;padding:calc(env(safe-area-inset-top,0px) + 16px) 14px 24px;overflow-y:auto}
+.menu-open .drawer{transform:none}.menu-open .scrim{opacity:1;pointer-events:auto}
+.drawer a{display:block;padding:12px;border-radius:12px;color:var(--text);font-weight:600;font-size:.98rem}
+.drawer a.on{background:var(--field);color:var(--coral)}
+.drawer h4{color:var(--muted);font-size:.82rem;margin:14px 12px 4px;font-weight:600}
+
+main{flex:1;width:100%;max-width:520px;margin:0 auto;padding:22px 30px 36px}
+h1{font-size:1.75rem;line-height:1.25;margin:30px 0 12px}
+h2{font-size:1.3rem;margin:22px 0 6px}
+h3{font-size:1.2rem;margin-bottom:6px}
+.txt p,.txt li{color:var(--muted);margin-top:10px}.txt ol{padding-left:22px}.txt b{color:var(--text)}
+
+.box{border:2px solid transparent;border-radius:26px;padding:18px 14px;margin-bottom:22px;
+ background:linear-gradient(var(--card),var(--card)) padding-box,var(--grad) border-box}
+.box>p{color:var(--muted);font-size:.92rem}
+.lbl{display:block;font-weight:700;font-size:1rem;margin:16px 0 6px}
+.lbl small{color:var(--muted);font-weight:400;font-size:.85rem}
+input,select,textarea{width:100%;min-height:42px;padding:9px 14px;border-radius:14px;border:1px solid var(--line);background:var(--field);color:var(--text);font:.95rem var(--font);appearance:none}
+textarea{min-height:77px;resize:vertical}
+select{background-image:linear-gradient(45deg,transparent 50%,var(--rose) 50%),linear-gradient(135deg,var(--rose) 50%,transparent 50%);background-position:calc(100% - 20px) 18px,calc(100% - 14px) 18px;background-size:6px 6px;background-repeat:no-repeat}
+input::placeholder,textarea::placeholder{color:#6b6535}
+.drop{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:150px;padding:16px;border:2px dashed var(--line);border-radius:18px;background:var(--field);text-align:center;cursor:pointer;transition:border-color .2s}
+.drop:hover,.drop:focus-within{border-color:var(--rose)}
+.drop input{position:absolute;inset:0;width:100%;height:100%;min-height:0;opacity:0;cursor:pointer}
+.drop svg{width:34px;height:34px;stroke:var(--rose);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.drop b{font-size:.98rem}.drop small{color:var(--muted)}
+.drop img{width:84px;height:84px;object-fit:cover;border-radius:50%;border:2px solid var(--rose)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.btn{display:flex;align-items:center;justify-content:center;width:100%;min-height:42px;margin-top:18px;border-radius:14px;border:0;background:var(--grad);color:var(--ink);font:700 1rem var(--font);cursor:pointer;transition:transform .15s,filter .2s}
+.btn:hover{filter:brightness(1.08)}.btn:active{transform:scale(.98)}
+.total{text-align:center;color:var(--muted);margin-top:14px;font-size:.95rem}.total b{color:var(--coral)}
+.tg{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:14px}
+.tg b{display:block;font-size:1rem}.tg small{color:var(--muted);font-size:.85rem}
+.sw{position:relative;flex:none;width:44px;height:26px}
+.sw input{position:absolute;inset:0;width:100%;height:100%;opacity:0;margin:0;cursor:pointer;min-height:0;padding:0}
+.sw i{position:absolute;inset:0;border-radius:99px;background:#3a3414;transition:.2s}
+.sw i::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s}
+.sw input:checked+i{background:var(--rose)}.sw input:checked+i::after{transform:translateX(18px)}
+.sw input:disabled+i{opacity:.85}
+.link{background:none;border:0;color:var(--text);font:600 1rem var(--font);min-height:44px;margin-top:6px;cursor:pointer}
+.more{display:none}.more.open{display:block}
+.seg{display:flex;gap:4px;padding:4px;border-radius:14px;background:var(--field);border:1px solid var(--line)}
+.seg button,.tabs button{min-height:36px;padding:0 12px;border-radius:10px;border:0;background:none;color:var(--muted);font:600 .9rem var(--font);cursor:pointer}
+.seg button.on,.tabs button.on{background:var(--line);color:var(--text)}
+.tabs{display:flex;justify-content:space-between;gap:4px;padding:4px;border-radius:16px;border:1px solid var(--line);background:var(--card);margin-bottom:22px}
+.tabs button{flex:1;min-height:40px}
+.tk{background:var(--field);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-top:10px}
+.tk .top{display:flex;justify-content:space-between;color:var(--muted);font-size:.88rem;margin-bottom:6px}
+.tk .in{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.tk input{border:0;background:none;font-size:1.4rem;padding:0;min-height:42px}
+.tk select{width:auto;min-width:140px;background-color:var(--card)}
+.chips{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+.chips button{min-height:38px;border-radius:99px;border:1px solid var(--line);background:var(--field);color:var(--rose);font:600 .9rem var(--font);cursor:pointer}
+.big{font-family:var(--head);font-size:3rem;font-weight:700;line-height:1.1;margin:10px 0}
+input[type=range]{padding:0;min-height:30px;accent-color:#ffd21f;border:0;background:none}
+.empty{text-align:center;padding:26px 10px 24px}.empty svg{width:44px;height:44px;stroke:var(--rose);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;margin-bottom:6px}
+.empty h2{font-size:1.6rem;margin:4px 0}.empty p{color:var(--muted);font-size:.95rem;max-width:30ch;margin:6px auto 0}
+details{border:1px solid var(--line);border-radius:16px;margin-top:10px;background:var(--card)}
+summary{cursor:pointer;padding:12px 16px;font-weight:600;min-height:44px;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px}
+summary::-webkit-details-marker{display:none}summary::after{content:"+";color:var(--coral);font-size:1.3rem}details[open] summary::after{content:"–"}
+details p{padding:0 16px 14px;color:var(--muted)}
+
+footer{border-top:1px solid var(--line);padding:20px 30px calc(env(safe-area-inset-bottom,0px) + 20px);display:flex;flex-wrap:wrap;gap:4px 16px;justify-content:space-between;align-items:center;color:var(--muted);font-size:.9rem}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);transform:translate(-50%,20px);background:var(--card);border:1px solid var(--rose);padding:10px 16px;border-radius:14px;opacity:0;pointer-events:none;transition:.25s;z-index:60;max-width:90vw;text-align:center;font-size:.92rem}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.v{animation:in .3s ease}@keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;padding:24px;z-index:50}.modal.open{display:flex}
+.mc{width:100%;max-width:380px;border:2px solid transparent;border-radius:26px;padding:20px 16px;background:linear-gradient(var(--card),var(--card)) padding-box,var(--grad) border-box}.mc .btn{margin-top:12px}.mc p{color:var(--muted)}.mc .btn.alt{background:var(--field);color:var(--text);border:1px solid var(--line)}
+.mc .wr{gap:10px;justify-content:flex-start;padding:0 14px}.wr img{border-radius:6px}
+</style>
+</head>
+<body>
+<header>
+  <button class="hb" id="hb" aria-label="Open menu"><span></span></button>
+  <a class="brand" href="#/create"><i>T</i><span class="bn">TokenForge</span></a>
+  <button class="pill" id="wp" data-w>Select Wallet</button>
+</header>
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer"><div id="dn"></div></aside>
+<main id="v"></main>
+<footer><span>Need support? Contact us:</span><a id="em" href="#"></a><span id="ft"></span></footer>
+<div class="modal" id="modal"></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* CONFIG: public values only. Never place a private key or seed phrase in this file. */
+const CONFIG={brand:"TokenForge",network:"devnet",rpc:"https://api.devnet.solana.com",uploadEndpoint:"/api/upload",feeWallet:"PASTE_YOUR_PHANTOM_PUBLIC_ADDRESS_HERE",email:"support@yourdomain.com",
+ prices:{create:0.25,revokeFreeze:0.08,revokeMint:0.08,mintMore:0.08,pool:0.45,removeLp:0.08}};
+const P=CONFIG.prices,f=n=>n.toFixed(2)+" SOL",$=s=>document.querySelector(s);
+const toast=m=>{const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),2600)};
+
+const PAGES=[["create","Create Token"],["authority","Revoke & Mint"],["liquidity","Create Liquidity Pool"],["swap","Swap"],["remove","Remove Liquidity"],["burn","Burn & Cleanup"]];
+const FAQ=[["How much does it cost?",`Token creation is ${f(P.create)}. Revoke freeze or mint is ${f(P.revokeFreeze)} each. A liquidity pool is ${f(P.pool)}. The total is always shown before you approve.`],
+["Where do my tokens go?","Directly to the wallet you connect. We never hold your tokens or keys."],
+["When does my token become tradable?","After you create a liquidity pool. It then appears on DexScreener."],
+["Can I change token details later?","No. Name, symbol and image are fixed at creation."],
+["Which wallets work?","Phantom, Solflare and other Solana wallets."]];
+
+const tk=(id,l)=>`<div class="tk"><div class="top"><span>${l}</span><span>Balance 0</span></div><div class="in"><input inputmode="decimal" placeholder="0" aria-label="${l} amount"><select aria-label="${l} token"><option>Select Token</option><option>SOL</option></select></div></div>`;
+const sel=(id,l)=>`<label class="lbl" for="${id}">${l}</label><select id="${id}"><option>Select Token</option></select>`;
+const wb=`<button class="btn" data-w>Select Wallet</button>`;
+
+const V={
+create:()=>`<div class="box">
+ <label class="lbl" for="n" style="margin-top:0">Token Name</label><input id="n" placeholder="Bonk" maxlength="32" autocomplete="off">
+ <div class="row"><div><label class="lbl" for="s">Symbol <small>(Max 8)</small></label><input id="s" placeholder="BONK" maxlength="8" autocomplete="off"></div><div><label class="lbl" for="d">Decimals</label><input id="d" type="number" value="6" min="0" max="9"></div></div>
+ <label class="lbl" for="u">Supply</label><input id="u" type="number" inputmode="numeric" placeholder="1000000000">
+ <span class="lbl">Token Image <small>(PNG)</small></span><label class="drop" id="dz" for="i"><input id="i" type="file" accept="image/png"><svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg><b>Upload Token Image</b><small>Tap to choose a PNG. Square, 512×512 is ideal.</small></label>
+ <label class="lbl" for="x">Description</label><textarea id="x" placeholder="Describe your token"></textarea>
+ <div class="tg"><div><b>Revoke Freeze <small>(Required)</small></b><small>Allows you to create a liquidity pool · ${f(P.revokeFreeze)}</small></div><label class="sw"><input type="checkbox" checked disabled aria-label="Revoke freeze"><i></i></label></div>
+ <div class="tg"><div><b>Revoke Mint</b><small>Mint authority lets you increase supply · ${f(P.revokeMint)}</small></div><label class="sw"><input type="checkbox" id="rm" aria-label="Revoke mint"><i></i></label></div>
+ <button class="link" id="mb" type="button">Show More Options ↓</button>
+ <div class="more" id="mo"><label class="lbl" for="t1">Telegram Link <small>(optional)</small></label><input id="t1" type="url" placeholder="https://t.me/…"><label class="lbl" for="t2">Website Link <small>(optional)</small></label><input id="t2" type="url" placeholder="https://…"><label class="lbl" for="t3">X (Twitter) Link <small>(optional)</small></label><input id="t3" type="url" placeholder="https://x.com/…"></div>
+ <p style="color:var(--muted);margin-top:10px">Tip: coin data can’t be changed after creation.</p>
+ <button class="btn" id="cb" data-w data-create>Select Wallet</button><p class="total">Total cost: <b id="tot"></b></p></div>
+ <div class="txt"><h1>Create Solana Token</h1><p>Create your Solana SPL token without writing code. It takes less than five minutes.</p>
+ <h2>How It Works</h2><ol><li>Connect your Solana wallet.</li><li>Enter the token name and a symbol of up to 8 characters.</li><li>Choose decimals. 6 is the usual choice.</li><li>Add a short description and a PNG image.</li><li>Set the supply.</li><li>Click create, approve the transaction and wait for your tokens.</li></ol>
+ <h2>Revoke Freeze Authority</h2><p>Required before you can create a liquidity pool. Cost: <b>${f(P.revokeFreeze)}</b>.</p>
+ <h2>Revoke Mint Authority</h2><p>Guarantees no more tokens than the total supply can ever exist. Buyers trust this. Cost: <b>${f(P.revokeMint)}</b>.</p></div>`,
+
+authority:()=>`<div class="box"><h3>Revoke Mint Authority</h3><p>Permanently removes the ability to create more tokens, so the total supply can never grow. This gives buyers confidence.</p>${sel("a1","Select Token")}${wb}<p class="total">Total cost: <b>${f(P.revokeMint)}</b></p></div>
+ <div class="box"><h3>Mint Token</h3><p>Create additional tokens and add them to the total supply. You must still hold the mint authority.</p>${sel("a2","Select Token")}<label class="lbl" for="a3">Amount</label><input id="a3" type="number" inputmode="numeric" placeholder="Enter Amount To Mint">${wb}<p class="total">Total cost: <b>${f(P.mintMore)}</b></p></div>
+ <div class="txt"><h1>Revoke &amp; Mint</h1><h2>Revoke Mint Authority</h2><p>Revoking is permanent. After it, no one, including you, can mint more of this token. Do it once your supply is final.</p><h2>Mint Token</h2><p>Use this only while you still hold the mint authority. Minting after launch can lower the value of existing holders, so announce supply changes openly.</p></div>`,
+
+liquidity:()=>`<div class="box"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px"><h3 style="margin:0">Initial Liquidity</h3><div class="seg" style="margin:0"><button class="on" type="button">CPMM</button><button type="button" id="v4">AMM v4</button></div></div>
+ ${tk("b","Base Token")}${tk("q","Quote Token")}
+ <label class="lbl">Initial Price</label><input placeholder="Auto-calculated from amounts" readonly>
+ <label class="lbl" for="ft2">Fee Tier</label><select id="ft2"><option>0.25%</option><option>0.01%</option><option>0.05%</option><option>0.30%</option><option>1%</option></select>
+ <button class="btn" data-w>Initialize Liquidity Pool</button><p class="total">Pool cost: <b>${f(P.pool)}</b></p></div>
+ <div class="txt"><h1>How To Create a Liquidity Pool</h1><ol><li>Select the token you just created.</li><li>Enter how many tokens go in the pool (95% or more is recommended).</li><li>Pick SOL as the quote token.</li><li>Enter the SOL amount to pair. 10+ SOL is recommended.</li><li>Choose the trading fee tier. Liquidity providers earn 84% of trading fees. 0.25% is recommended.</li><li>Click Initialize Liquidity Pool and approve.</li></ol><p>The SOL you add sets the starting price. To show liquidity as locked, burn your LP tokens on the Burn page.</p></div>`,
+
+swap:()=>`<div class="box"><h3>Swap Token</h3>${tk("s1","Sell")}${tk("s2","Buy")}${wb}</div>`,
+
+remove:()=>`<div class="box"><h3>Remove Liquidity</h3><label class="lbl" for="pa">Pool Address</label><input id="pa" placeholder="Enter Pool Address">
+ <div class="tk"><div class="top"><span>Remove Amount</span></div><div class="big" id="pc">0%</div><input type="range" id="rg" min="0" max="100" value="0" aria-label="Remove percent">
+ <div class="chips">${[25,50,75,100].map(n=>`<button type="button" data-p="${n}">${n===100?"MAX":n+"%"}</button>`).join("")}</div></div>
+ ${wb}<p class="total">Cost: <b>${f(P.removeLp)}</b></p></div>
+ <div class="txt"><h1>How To Remove Liquidity</h1><ol><li>Enter the pool address. It’s the pair address on your token’s DexScreener page.</li><li>Pick an amount with the slider or the quick buttons.</li><li>Click Remove Liquidity and approve in your wallet.</li><li>Your share of both tokens returns to your wallet.</li></ol><p>Use MAX to withdraw everything. Removing liquidity can lock in impermanent loss, so check values first.</p></div>`,
+
+burn:()=>`<div class="tabs" id="tb">${["LP","Tokens","Cleanup","Unknown"].map((t,i)=>`<button class="${i?"":"on"}" data-t="${t}">${t}</button>`).join("")}</div><div id="tc"></div>
+ <div class="txt"><h1>Burn &amp; Cleanup</h1><h2>LP</h2><p>Burn your LP tokens to lock liquidity permanently. Buyers see the pool as locked, but you can no longer withdraw it.</p><h2>Tokens</h2><p>Burn tokens you no longer want, reducing the circulating supply.</p><h2>Cleanup</h2><p>Close empty token accounts to recover the small rent deposit.</p><h2>Unknown</h2><p>Tokens without readable metadata are hidden here to prevent accidental burns.</p></div>`,
+
+faq:()=>`<h1 style="margin-top:6px">FAQ</h1>${FAQ.map(([q,a])=>`<details><summary>${q}</summary><p>${a}</p></details>`).join("")}`,
+terms:()=>`<div class="txt"><h1 style="margin-top:6px">Terms of Service</h1><ol><li>You control your wallet. We never ask for your seed phrase or private key.</li><li>Blockchain transactions are final and can’t be reversed.</li><li>Prices are in SOL and include network and protocol costs.</li><li>Don’t use this service to mislead or defraud buyers.</li><li>Crypto is volatile. Nothing here is financial advice.</li></ol><p>Draft only. Have a lawyer review it before launch.</p></div>`,
+contact:()=>`<div class="box"><h3>Contact</h3><p>Questions about a transaction? Email us with your wallet address.</p><a class="btn" style="text-decoration:none" href="mailto:${CONFIG.email}">${CONFIG.email}</a></div>`
+};
+const ICON='<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+const BURN={LP:["LP Positions","Burn LP tokens to lock liquidity.","No LP positions found. Make sure the correct wallet is selected."],Tokens:["Your Tokens","Burn tokens to reduce supply.","No tokens found. Make sure the correct wallet is selected."],Cleanup:["Empty Accounts","Close empty accounts to recover rent.","No empty token accounts found. Everything is cleaned up."],Unknown:["Unknown Tokens","Tokens without readable metadata appear here.","Nothing here. Unknown tokens are hidden to prevent accidental burns."]};
+
+function nav(){const c=location.hash||"#/create";
+ $("#dn").innerHTML=`<h4>Tools</h4>`+PAGES.map(([k,l])=>`<a href="#/${k}" class="${c==="#/"+k?"on":""}">${l}</a>`).join("")+`<h4>Company</h4>`+[["faq","FAQ"],["terms","Terms of Service"],["contact","Contact"]].map(([k,l])=>`<a href="#/${k}" class="${c==="#/"+k?"on":""}">${l}</a>`).join("")}
+function menu(o){document.body.classList.toggle("menu-open",o)}
+function route(){let id=(location.hash||"").replace("#/","");if(!V[id])id="create";
+ $("#v").innerHTML=`<div class="v">${V[id]()}</div>`;nav();menu(false);scrollTo(0,0);updateUI();
+ if(id==="create"){const t=()=>$("#tot").textContent=f(P.create+P.revokeFreeze+($("#rm").checked?P.revokeMint:0));$("#rm").onchange=t;t();
+  $("#mb").onclick=e=>{const o=$("#mo").classList.toggle("open");e.target.textContent=o?"Hide More Options ↑":"Show More Options ↓"};$("#i").onchange=e=>{const fl=e.target.files[0];if(!fl)return;const u=URL.createObjectURL(fl);$("#dz").querySelector("svg").outerHTML=`<img src="${u}" alt="Token preview">`;$("#dz").querySelector("b").textContent=fl.name;$("#dz").querySelector("small").textContent="Tap to change image"}}
+ if(id==="liquidity")$("#v4").onclick=()=>toast("AMM v4 is coming soon. CPMM is the recommended pool type.");
+ if(id==="remove"){const r=$("#rg"),s=()=>$("#pc").textContent=r.value+"%";r.oninput=s;document.querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>{r.value=b.dataset.p;s()})}
+ if(id==="burn"){const s=t=>{$("#tc").innerHTML=`<div class="box"><h3>${BURN[t][0]}</h3><p>${BURN[t][1]}</p><div class="empty">${ICON}<h2>All Clean!</h2><p>${BURN[t][2]}</p></div>${wb}</div>`;document.querySelectorAll("#tb button").forEach(b=>b.classList.toggle("on",b.dataset.t===t))};
+  document.querySelectorAll("#tb button").forEach(b=>b.onclick=()=>s(b.dataset.t));s("LP")}}
+$("#hb").onclick=()=>menu(true);$("#scrim").onclick=()=>menu(false);
+document.addEventListener("keydown",e=>e.key==="Escape"&&menu(false));
+document.addEventListener("click",e=>{const w=e.target.closest("[data-w]");if(!w)return;
+ if(w.id==="wp"&&W.pk)return disconnect();
+ if(!W.pk)return openWallets();
+ if(w.dataset.create)createToken();else toast("This tool is added in the next step.")});
+document.querySelectorAll(".bn").forEach(n=>n.textContent=CONFIG.brand);
+$("#em").textContent=CONFIG.email;$("#em").href="mailto:"+CONFIG.email;$("#ft").textContent="© "+new Date().getFullYear()+" "+CONFIG.brand+" · v3";
+
+/* ===== Step 2: wallet + token creation ===== */
+const W={pk:null,prov:null},N=CONFIG.network,CL=N==="mainnet-beta"?"":"?cluster="+N;
+const short=a=>a.slice(0,4)+"…"+a.slice(-4),esc=t=>t.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const STD=[];
+(function(){const add=w=>{if(w&&w.features&&w.features["standard:connect"]&&(w.chains||[]).some(c=>String(c).startsWith("solana:"))&&!STD.includes(w))STD.push(w)};
+const api={register:(...ws)=>{ws.forEach(add);return()=>{}}};
+addEventListener("wallet-standard:register-wallet",e=>{try{e.detail(api)}catch(x){}});
+try{dispatchEvent(new CustomEvent("wallet-standard:app-ready",{detail:api}))}catch(x){}})();
+const MOBILE=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+function legacy(){const p=[];[["Phantom",window.phantom?.solana,"isPhantom"],["Solflare",window.solflare,"isSolflare"],["Backpack",window.backpack,"isBackpack"]].forEach(([n,v,k])=>{if(v&&v[k])p.push({name:n,icon:"",legacy:v})});return p}
+function wallets(){const l=STD.map(w=>({name:w.name,icon:w.icon,std:w}));legacy().forEach(w=>{if(!l.some(x=>x.name.toLowerCase()===w.name.toLowerCase()))l.push(w)});return l}
+function modal(h){const m=$("#modal");m.innerHTML=`<div class="mc">${h}</div>`;m.classList.add("open");m.onclick=e=>{if(e.target===m)closeModal()}}
+function closeModal(){$("#modal").classList.remove("open")}
+function openWallets(){const L=wallets(),u=encodeURIComponent(location.href),r=encodeURIComponent(location.origin);
+ const row=(w,i)=>`<button class="btn alt wr" data-wi="${i}">${/^data:image\//.test(w.icon||"")?`<img src="${w.icon}" alt="" width="24" height="24">`:""}${esc(w.name)}</button>`;
+ const ln=(c,h,t,ext)=>`<a class="btn ${c}" style="text-decoration:none" href="${h}"${ext?' target="_blank" rel="noopener"':""}>${t}</a>`;
+ let h=`<h3>Select Wallet</h3>`;
+ if(L.length)h+=`<p>Choose a Solana wallet to connect.</p>`+L.map(row).join("");
+ else if(MOBILE)h+=`<p>No Solana wallet detected. Open this site inside your wallet app to connect.</p>`+ln("","https://phantom.app/ul/browse/"+u+"?ref="+r,"Open In Phantom")+ln("alt","https://solflare.com/ul/v1/browse/"+u+"?ref="+r,"Open In Solflare")+(location.protocol!=="https:"?`<p>This page must be hosted on a public https domain for wallet apps to open it.</p>`:"");
+ else h+=`<p>No Solana wallet detected in this browser. Install one, then refresh this page.</p>`+ln("","https://phantom.app/download","Install Phantom",1)+ln("alt","https://solflare.com/download","Install Solflare",1);
+ modal(h+`<button class="link" id="mx">Cancel</button>`);
+ $("#mx").onclick=closeModal;document.querySelectorAll("[data-wi]").forEach(b=>b.onclick=()=>connect(L[b.dataset.wi]))}
+async function connect(w){try{
+ if(w.std){const {accounts}=await w.std.features["standard:connect"].connect(),a=(accounts&&accounts[0])||w.std.accounts[0];if(!a)throw new Error("No account");W.std=w.std;W.acc=a;W.prov=null;W.pk=new solanaWeb3.PublicKey(a.address)}
+ else{const r=await w.legacy.connect();W.prov=w.legacy;W.std=null;W.pk=new solanaWeb3.PublicKey((r.publicKey||w.legacy.publicKey).toString())}
+ closeModal();updateUI();toast(w.name+" connected")}catch(e){toast("Connection cancelled")}}
+async function disconnect(){try{if(W.std){const d=W.std.features["standard:disconnect"];if(d)await d.disconnect()}else await W.prov.disconnect()}catch(e){}W.pk=W.std=W.prov=W.acc=null;updateUI();toast("Wallet disconnected")}
+async function sendTx(tx,conn){
+ if(W.std){const f=W.std.features["solana:signTransaction"];if(!f)throw new Error("This wallet cannot sign transactions.");
+  const [o]=await f.signTransaction({account:W.acc,transaction:tx.serialize({requireAllSignatures:false,verifySignatures:false}),chain:"solana:"+(N==="mainnet-beta"?"mainnet":N)});
+  return conn.sendRawTransaction(o.signedTransaction)}
+ const r=await W.prov.signAndSendTransaction(tx);return r.signature||r}
+function updateUI(){document.querySelectorAll("[data-w]").forEach(b=>{b.textContent=b.id==="wp"?(W.pk?short(W.pk.toString()):"Select Wallet"):W.pk?(b.dataset.create?"Create Token":"Coming In Next Step"):"Select Wallet"})}
+if(N!=="mainnet-beta")$("#ft").textContent+=" · "+N.toUpperCase();
+
+const MPL=()=>new solanaWeb3.PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s");
+const bstr=s=>{const b=new TextEncoder().encode(s),l=new Uint8Array(4);new DataView(l.buffer).setUint32(0,b.length,true);return [l,b]};
+function metaIx(mint,me,name,symbol,uri){const X=solanaWeb3,pda=X.PublicKey.findProgramAddressSync([new TextEncoder().encode("metadata"),MPL().toBytes(),mint.toBytes()],MPL())[0];
+ const parts=[new Uint8Array([33]),...bstr(name),...bstr(symbol),...bstr(uri),new Uint8Array(7)],d=new Uint8Array(parts.reduce((a,p)=>a+p.length,0));let o=0;parts.forEach(p=>{d.set(p,o);o+=p.length});
+ return new X.TransactionInstruction({programId:MPL(),data:d,keys:[{pubkey:pda,isSigner:false,isWritable:true},{pubkey:mint,isSigner:false,isWritable:false},{pubkey:me,isSigner:true,isWritable:false},{pubkey:me,isSigner:true,isWritable:true},{pubkey:me,isSigner:true,isWritable:false},{pubkey:X.SystemProgram.programId,isSigner:false,isWritable:false}]})}
+const dataUrl=f=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=no;r.readAsDataURL(f)});
+
+async function createToken(){
+ const g=id=>$("#"+id).value.trim(),name=g("n"),symbol=g("s"),dec=+g("d"),sup=g("u"),file=$("#i").files[0],revMint=$("#rm").checked;
+ if(!name||name.length>32)return toast("Enter a token name (max 32 characters).");
+ if(!symbol)return toast("Enter a symbol (max 8 characters).");
+ if(!Number.isInteger(dec)||dec<0||dec>9)return toast("Decimals must be between 0 and 9.");
+ if(!/^\d+$/.test(sup)||/^0+$/.test(sup))return toast("Supply must be a whole number.");
+ const raw=BigInt(sup)*10n**BigInt(dec);if(raw>18446744073709551615n)return toast("Supply is too large for these decimals.");
+ if(!file)return toast("Upload a PNG token image.");
+ if(file.type!=="image/png"||file.size>1048576)return toast("Image must be a PNG under 1 MB.");
+ const btn=$("#cb"),st=t=>btn.textContent=t;btn.disabled=true;
+ try{
+  const X=solanaWeb3,T=splToken;
+  st("Uploading Image…");
+  const up=await fetch(CONFIG.uploadEndpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name,symbol,description:g("x"),image:await dataUrl(file),telegram:g("t1"),website:g("t2"),twitter:g("t3")})});
+  const uj=await up.json();if(!up.ok||!uj.uri)throw new Error(uj.error||"Image upload failed.");
+  const conn=new X.Connection(CONFIG.rpc,"confirmed"),me=W.pk,mint=X.Keypair.generate();
+  const [mr,ar,dr]=await Promise.all([T.MINT_SIZE,165,679].map(n=>conn.getMinimumBalanceForRentExemption(n)));
+  const total=Math.round((P.create+P.revokeFreeze+(revMint?P.revokeMint:0))*X.LAMPORTS_PER_SOL);
+  const fee=Math.max(0,total-(mr+ar+dr+10000));   /* wallet debit equals the total shown */
+  let feeIx=null;try{feeIx=X.SystemProgram.transfer({fromPubkey:me,toPubkey:new X.PublicKey(CONFIG.feeWallet),lamports:fee})}catch(e){if(N==="mainnet-beta")throw new Error("Fee wallet is not set in CONFIG.")}
+  const ata=T.getAssociatedTokenAddressSync(mint.publicKey,me),tx=new X.Transaction();
+  tx.add(X.SystemProgram.createAccount({fromPubkey:me,newAccountPubkey:mint.publicKey,space:T.MINT_SIZE,lamports:mr,programId:T.TOKEN_PROGRAM_ID}),
+   T.createInitializeMint2Instruction(mint.publicKey,dec,me,null,T.TOKEN_PROGRAM_ID),   /* freeze authority is never set */
+   T.createAssociatedTokenAccountInstruction(me,ata,me,mint.publicKey),
+   T.createMintToInstruction(mint.publicKey,ata,me,raw),
+   metaIx(mint.publicKey,me,name,symbol,uj.uri));
+  if(revMint)tx.add(T.createSetAuthorityInstruction(mint.publicKey,me,T.AuthorityType.MintTokens,null));
+  if(feeIx)tx.add(feeIx);
+  const bh=await conn.getLatestBlockhash();tx.recentBlockhash=bh.blockhash;tx.feePayer=me;tx.partialSign(mint);
+  st("Approve In Wallet…");
+  const sig=await sendTx(tx,conn);
+  st("Confirming…");
+  await conn.confirmTransaction({signature:sig,blockhash:bh.blockhash,lastValidBlockHeight:bh.lastValidBlockHeight},"confirmed");
+  const a=mint.publicKey.toString();
+  modal(`<h3>Token Created!</h3><p>Your ${esc(symbol)} supply is now in your wallet.</p><label class="lbl">Mint Address</label><input readonly value="${a}" onclick="this.select()"><a class="btn" style="text-decoration:none" target="_blank" rel="noopener" href="https://solscan.io/token/${a}${CL}">View On Solscan</a><a class="btn alt" style="text-decoration:none" href="#/liquidity" onclick="closeModal()">Create Liquidity Pool</a>`);
+ }catch(e){const m=(e&&e.message)||String(e);console.error(e);
+  if(/reject|denied|cancel/i.test(m))toast("Transaction cancelled.");
+  else{modal(`<h3>Could Not Create Token</h3><p>${esc(m)}</p><button class="btn" id="mx2">Close</button>`);$("#mx2").onclick=closeModal}}
+ finally{btn.disabled=false;updateUI()}}
+
+addEventListener("hashchange",route);route();
+</script>
+</body>
+</html>
