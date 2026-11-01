@@ -4,7 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@1.98.0/lib/index.iife.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@solana/spl-token@0.4.9/lib/index.iife.min.js"></script>
 <title>TokenForge – Create Solana Token</title>
 <style>
 :root{
@@ -198,7 +197,7 @@ document.addEventListener("click",e=>{const w=e.target.closest("[data-w]");if(!w
  if(!W.pk)return openWallets();
  if(w.hasAttribute("data-create"))createToken();else toast("This tool is added in the next step.")});
 document.querySelectorAll(".bn").forEach(n=>n.textContent=CONFIG.brand);
-$("#em").textContent=CONFIG.email;$("#em").href="mailto:"+CONFIG.email;$("#ft").textContent="© "+new Date().getFullYear()+" "+CONFIG.brand+" · v4";
+$("#em").textContent=CONFIG.email;$("#em").href="mailto:"+CONFIG.email;$("#ft").textContent="© "+new Date().getFullYear()+" "+CONFIG.brand+" · v5";
 
 /* ===== Step 2: wallet + token creation ===== */
 const W={pk:null,prov:null},N=CONFIG.network,CL=N==="mainnet-beta"?"":"?cluster="+N;
@@ -242,6 +241,15 @@ function metaIx(mint,me,name,symbol,uri){const X=solanaWeb3,pda=X.PublicKey.find
  return new X.TransactionInstruction({programId:MPL(),data:d,keys:[{pubkey:pda,isSigner:false,isWritable:true},{pubkey:mint,isSigner:false,isWritable:false},{pubkey:me,isSigner:true,isWritable:false},{pubkey:me,isSigner:true,isWritable:true},{pubkey:me,isSigner:true,isWritable:false},{pubkey:X.SystemProgram.programId,isSigner:false,isWritable:false}]})}
 const dataUrl=f=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=no;r.readAsDataURL(f)});
 
+/* Minimal SPL Token + Associated Token instructions (no extra library needed) */
+function makeSPL(){const X=solanaWeb3,K=s=>new X.PublicKey(s),TP=K("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),AP=K("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLBe8jyL");
+ const ix=(p,keys,data)=>new X.TransactionInstruction({programId:p,keys,data}),k=(pubkey,isSigner,isWritable)=>({pubkey,isSigner,isWritable});
+ return{MINT_SIZE:82,TOKEN_PROGRAM_ID:TP,AuthorityType:{MintTokens:0},
+  getAssociatedTokenAddressSync:(mint,owner)=>X.PublicKey.findProgramAddressSync([owner.toBytes(),TP.toBytes(),mint.toBytes()],AP)[0],
+  createInitializeMint2Instruction:(mint,dec,auth)=>{const d=new Uint8Array(35);d[0]=20;d[1]=dec;d.set(auth.toBytes(),2);return ix(TP,[k(mint,false,true)],d)},
+  createAssociatedTokenAccountInstruction:(payer,ata,owner,mint)=>ix(AP,[k(payer,true,true),k(ata,false,true),k(owner,false,false),k(mint,false,false),k(X.SystemProgram.programId,false,false),k(TP,false,false)],new Uint8Array([1])),
+  createMintToInstruction:(mint,dest,auth,amt)=>{const d=new Uint8Array(9);d[0]=7;new DataView(d.buffer).setBigUint64(1,BigInt(amt),true);return ix(TP,[k(mint,false,true),k(dest,false,true),k(auth,true,false)],d)},
+  createSetAuthorityInstruction:(acct,cur,type)=>ix(TP,[k(acct,false,true),k(cur,true,false)],new Uint8Array([6,type,0]))}}
 async function createToken(){
  const g=id=>$("#"+id).value.trim(),name=g("n"),symbol=g("s"),dec=+g("d"),sup=g("u"),file=$("#i").files[0],revMint=$("#rm").checked;
  if(!name||name.length>32)return toast("Enter a token name (max 32 characters).");
@@ -253,8 +261,8 @@ async function createToken(){
  if(file.type!=="image/png"||file.size>1048576)return toast("Image must be a PNG under 1 MB.");
  const btn=$("#cb"),st=t=>btn.textContent=t;btn.disabled=true;
  try{
-  if(!window.solanaWeb3||!window.splToken)throw new Error("Wallet libraries failed to load. Refresh the page and try again.");
-  const X=solanaWeb3,T=splToken;
+  if(!window.solanaWeb3)throw new Error("Wallet libraries failed to load. Refresh the page and try again.");
+  const X=solanaWeb3,T=makeSPL();
   st("Uploading Image…");
   const up=await fetch(CONFIG.uploadEndpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name,symbol,description:g("x"),image:await dataUrl(file),telegram:g("t1"),website:g("t2"),twitter:g("t3")})});
   const uj=await up.json();if(!up.ok||!uj.uri)throw new Error(uj.error||"Image upload failed.");
