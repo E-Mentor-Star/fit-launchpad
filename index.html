@@ -117,7 +117,7 @@ footer{border-top:1px solid var(--line);padding:20px 30px calc(env(safe-area-ins
 
 <script>
 /* CONFIG: public values only. Never place a private key or seed phrase in this file. */
-const CONFIG={brand:"TokenForge",network:"devnet",rpc:"https://api.devnet.solana.com",uploadEndpoint:"/api/upload",feeWallet:"PASTE_YOUR_PHANTOM_PUBLIC_ADDRESS_HERE",email:"support@yourdomain.com",
+const CONFIG={brand:"TokenForge",network:"devnet",rpc:"https://api.devnet.solana.com",uploadEndpoint:"/api/upload",feeWallet:"88PY7ivn8rLBCqF4q9Dq1YqEZB6vjEJTjHrD6KxjGaeB",email:"support@yourdomain.com",
  prices:{create:0.25,revokeFreeze:0.08,revokeMint:0.08,mintMore:0.08,pool:0.45,removeLp:0.08}};
 const P=CONFIG.prices,f=n=>n.toFixed(2)+" SOL",$=s=>document.querySelector(s);
 const toast=m=>{const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),2600)};
@@ -196,9 +196,9 @@ document.addEventListener("keydown",e=>e.key==="Escape"&&menu(false));
 document.addEventListener("click",e=>{const w=e.target.closest("[data-w]");if(!w)return;
  if(w.id==="wp"&&W.pk)return disconnect();
  if(!W.pk)return openWallets();
- if(w.dataset.create)createToken();else toast("This tool is added in the next step.")});
+ if(w.hasAttribute("data-create"))createToken();else toast("This tool is added in the next step.")});
 document.querySelectorAll(".bn").forEach(n=>n.textContent=CONFIG.brand);
-$("#em").textContent=CONFIG.email;$("#em").href="mailto:"+CONFIG.email;$("#ft").textContent="© "+new Date().getFullYear()+" "+CONFIG.brand+" · v3";
+$("#em").textContent=CONFIG.email;$("#em").href="mailto:"+CONFIG.email;$("#ft").textContent="© "+new Date().getFullYear()+" "+CONFIG.brand+" · v4";
 
 /* ===== Step 2: wallet + token creation ===== */
 const W={pk:null,prov:null},N=CONFIG.network,CL=N==="mainnet-beta"?"":"?cluster="+N;
@@ -232,7 +232,7 @@ async function sendTx(tx,conn){
   const [o]=await f.signTransaction({account:W.acc,transaction:tx.serialize({requireAllSignatures:false,verifySignatures:false}),chain:"solana:"+(N==="mainnet-beta"?"mainnet":N)});
   return conn.sendRawTransaction(o.signedTransaction)}
  const r=await W.prov.signAndSendTransaction(tx);return r.signature||r}
-function updateUI(){document.querySelectorAll("[data-w]").forEach(b=>{b.textContent=b.id==="wp"?(W.pk?short(W.pk.toString()):"Select Wallet"):W.pk?(b.dataset.create?"Create Token":"Coming In Next Step"):"Select Wallet"})}
+function updateUI(){document.querySelectorAll("[data-w]").forEach(b=>{b.textContent=b.id==="wp"?(W.pk?short(W.pk.toString()):"Select Wallet"):W.pk?(b.hasAttribute("data-create")?"Create Token":"Coming In Next Step"):"Select Wallet"})}
 if(N!=="mainnet-beta")$("#ft").textContent+=" · "+N.toUpperCase();
 
 const MPL=()=>new solanaWeb3.PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s");
@@ -253,6 +253,7 @@ async function createToken(){
  if(file.type!=="image/png"||file.size>1048576)return toast("Image must be a PNG under 1 MB.");
  const btn=$("#cb"),st=t=>btn.textContent=t;btn.disabled=true;
  try{
+  if(!window.solanaWeb3||!window.splToken)throw new Error("Wallet libraries failed to load. Refresh the page and try again.");
   const X=solanaWeb3,T=splToken;
   st("Uploading Image…");
   const up=await fetch(CONFIG.uploadEndpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name,symbol,description:g("x"),image:await dataUrl(file),telegram:g("t1"),website:g("t2"),twitter:g("t3")})});
