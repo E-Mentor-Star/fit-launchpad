@@ -197,7 +197,7 @@ document.addEventListener("click",e=>{const w=e.target.closest("[data-w]");if(!w
  if(!W.pk)return openWallets();
  if(w.hasAttribute("data-create"))createToken();else toast("This tool is added in the next step.")});
 document.querySelectorAll(".bn").forEach(n=>n.textContent=CONFIG.brand);
-$("#em").textContent=CONFIG.email;$("#em").href="mailto:"+CONFIG.email;$("#ft").textContent="© "+new Date().getFullYear()+" "+CONFIG.brand+" · v5";
+$("#em").textContent=CONFIG.email;$("#em").href="mailto:"+CONFIG.email;$("#ft").textContent="© "+new Date().getFullYear()+" "+CONFIG.brand+" · v7";
 
 /* ===== Step 2: wallet + token creation ===== */
 const W={pk:null,prov:null},N=CONFIG.network,CL=N==="mainnet-beta"?"":"?cluster="+N;
@@ -263,9 +263,10 @@ async function createToken(){
  try{
   if(!window.solanaWeb3)throw new Error("Wallet libraries failed to load. Refresh the page and try again.");
   const X=solanaWeb3,T=makeSPL();
-  st("Uploading Image…");
+  st("Creating Token…");
   const up=await fetch(CONFIG.uploadEndpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name,symbol,description:g("x"),image:await dataUrl(file),telegram:g("t1"),website:g("t2"),twitter:g("t3")})});
-  const uj=await up.json();if(!up.ok||!uj.uri)throw new Error(uj.error||"Image upload failed.");
+  const ut=await up.text();let uj={};try{uj=JSON.parse(ut)}catch(x){}
+  if(!up.ok||!uj.uri)throw new Error(up.status===404?"Image upload service not found (/api/upload). Make sure the api/upload.js file is in your GitHub repo, then redeploy.":(uj.error||"Image upload failed (code "+up.status+"). Check PINATA_JWT in Vercel."));
   const conn=new X.Connection(CONFIG.rpc,"confirmed"),me=W.pk,mint=X.Keypair.generate();
   const [mr,ar,dr]=await Promise.all([T.MINT_SIZE,165,679].map(n=>conn.getMinimumBalanceForRentExemption(n)));
   const total=Math.round((P.create+P.revokeFreeze+(revMint?P.revokeMint:0))*X.LAMPORTS_PER_SOL);
