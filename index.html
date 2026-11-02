@@ -197,7 +197,7 @@ document.addEventListener("click",e=>{const w=e.target.closest("[data-w]");if(!w
  if(!W.pk)return openWallets();
  if(w.hasAttribute("data-create"))createToken();else toast("This tool is added in the next step.")});
 document.querySelectorAll(".bn").forEach(n=>n.textContent=CONFIG.brand);
-$("#em").textContent=CONFIG.email;$("#em").href="mailto:"+CONFIG.email;$("#ft").textContent="© "+new Date().getFullYear()+" "+CONFIG.brand+" · v7";
+$("#em").textContent=CONFIG.email;$("#em").href="mailto:"+CONFIG.email;$("#ft").textContent="© "+new Date().getFullYear()+" "+CONFIG.brand+" · v9";
 
 /* ===== Step 2: wallet + token creation ===== */
 const W={pk:null,prov:null},N=CONFIG.network,CL=N==="mainnet-beta"?"":"?cluster="+N;
@@ -270,7 +270,9 @@ async function createToken(){
   const conn=new X.Connection(CONFIG.rpc,"confirmed"),me=W.pk,mint=X.Keypair.generate();
   const [mr,ar,dr]=await Promise.all([T.MINT_SIZE,165,679].map(n=>conn.getMinimumBalanceForRentExemption(n)));
   const total=Math.round((P.create+P.revokeFreeze+(revMint?P.revokeMint:0))*X.LAMPORTS_PER_SOL);
-  const fee=Math.max(0,total-(mr+ar+dr+10000));   /* wallet debit equals the total shown */
+  const fee=Math.max(0,total-(mr+ar+dr+10000));
+  const bal=await conn.getBalance(me);
+  if(bal<total+20000)throw new Error("Not enough SOL on "+N+". Your balance there is "+(bal/1e9).toFixed(3)+" SOL and you need about "+(total/1e9).toFixed(2)+" SOL. In Phantom, make sure the network is set to "+N+".");   /* wallet debit equals the total shown */
   let feeIx=null;try{feeIx=X.SystemProgram.transfer({fromPubkey:me,toPubkey:new X.PublicKey(CONFIG.feeWallet),lamports:fee})}catch(e){if(N==="mainnet-beta")throw new Error("Fee wallet is not set in CONFIG.")}
   const ata=T.getAssociatedTokenAddressSync(mint.publicKey,me),tx=new X.Transaction();
   tx.add(X.SystemProgram.createAccount({fromPubkey:me,newAccountPubkey:mint.publicKey,space:T.MINT_SIZE,lamports:mr,programId:T.TOKEN_PROGRAM_ID}),
@@ -281,6 +283,9 @@ async function createToken(){
   if(revMint)tx.add(T.createSetAuthorityInstruction(mint.publicKey,me,T.AuthorityType.MintTokens,null));
   if(feeIx)tx.add(feeIx);
   const bh=await conn.getLatestBlockhash();tx.recentBlockhash=bh.blockhash;tx.feePayer=me;tx.partialSign(mint);
+  st("Checking…");
+  const sim=await conn.simulateTransaction(new X.VersionedTransaction(tx.compileMessage()),{sigVerify:false,replaceRecentBlockhash:true});
+  if(sim.value.err){const lg=(sim.value.logs||[]).slice(-5).join(" | ");throw new Error("Pre-check failed: "+JSON.stringify(sim.value.err)+(lg?" | "+lg:""))}
   st("Approve In Wallet…");
   const sig=await sendTx(tx,conn);
   st("Confirming…");
