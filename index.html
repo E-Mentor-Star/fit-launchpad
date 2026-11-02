@@ -104,6 +104,8 @@ footer{border-top:1px solid var(--line);padding:20px 30px calc(env(safe-area-ins
 .sr{display:flex;gap:8px}.sr select{flex:1;min-width:0}.maxb{flex:none;min-height:42px;padding:0 16px;border-radius:14px;border:1px solid var(--rose);background:var(--field);color:var(--rose);font:700 .9rem var(--font);cursor:pointer}
 .seg{width:100%}.seg button{flex:1}
 input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none;border-color:var(--rose);box-shadow:0 0 0 2px rgba(255,210,31,.22)}
+input,select,textarea{min-height:44px;font-size:16px}textarea{min-height:88px}
+.btn{min-height:48px}.pill{min-height:44px}.hb{width:44px;height:44px}.maxb{min-height:44px}.drawer a{min-height:44px}.seg button,.tabs button{min-height:40px}
 </style>
 </head>
 <body>
@@ -121,7 +123,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none;bor
 
 <script>
 /* CONFIG: public values only. Never place a private key or seed phrase in this file. */
-const CONFIG={brand:"TokenForge",network:"devnet",rpc:"https://api.devnet.solana.com",uploadEndpoint:"/api/upload",feeWallet:"88PY7ivn8rLBCqF4q9Dq1YqEZB6vjEJTjHrD6KxjGaeB",email:"support@yourdomain.com",
+const CONFIG={brand:"TokenForge",network:"devnet",rpc:"https://api.devnet.solana.com",uploadEndpoint:"/api/upload",poolEndpoint:"/api/create-pool",feeWallet:"88PY7ivn8rLBCqF4q9Dq1YqEZB6vjEJTjHrD6KxjGaeB",email:"support@yourdomain.com",
  prices:{create:0.25,revokeFreeze:0.08,revokeMint:0.08,mintMore:0.08,pool:0.45,removeLp:0.08}};
 const P=CONFIG.prices,f=n=>n.toFixed(2)+" SOL",$=s=>document.querySelector(s);
 const toast=m=>{const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),2600)};
@@ -134,7 +136,7 @@ const FAQ=[["How much does it cost?",`Token creation is ${f(P.create)}. Revoke f
 ["Which wallets work?","Phantom, Solflare and other Solana wallets."]];
 
 const tk=(id,l)=>`<div class="tk"><div class="top"><span>${l}</span><span>Balance 0</span></div><div class="in"><input inputmode="decimal" placeholder="0" aria-label="${l} amount"><select aria-label="${l} token"><option>Select Token</option><option>SOL</option></select></div></div>`;
-const tok=(id,l)=>`<div class="fld"><div class="fh"><span>${l}</span><small id="${id}b">Balance 0</small></div><div class="sr"><select id="${id}s" aria-label="${l}"><option value="">Select Token</option></select><button class="maxb" id="${id}m" type="button">Max</button></div><input id="${id}a" inputmode="decimal" placeholder="0.00" style="margin-top:8px" aria-label="${l} amount"></div>`;
+const tok=(id,l)=>`<div class="fld"><div class="fh"><span>${l}</span><small id="${id}b">Balance 0</small></div><div class="sr"><select id="${id}s" aria-label="${l}"><option value="">Select Token</option></select><button class="maxb" id="${id}m" type="button">Max</button></div><input id="${id}a" inputmode="decimal" data-num="dec" autocomplete="off" placeholder="0.00" style="margin-top:8px" aria-label="${l} amount"></div>`;
 const sel=(id,l)=>`<label class="lbl" for="${id}">${l}</label><select id="${id}"><option>Select Token</option></select>`;
 const wb=`<button class="btn" data-w>Select Wallet</button>`;
 
@@ -142,7 +144,7 @@ const V={
 create:()=>`<div class="box">
  <label class="lbl" for="n" style="margin-top:0">Token Name</label><input id="n" placeholder="Bonk" maxlength="32" autocomplete="off">
  <div class="row"><div><label class="lbl" for="s">Symbol <small>(Max 8)</small></label><input id="s" placeholder="BONK" maxlength="8" autocomplete="off"></div><div><label class="lbl" for="d">Decimals</label><input id="d" type="number" value="6" min="0" max="9"></div></div>
- <label class="lbl" for="u">Supply</label><input id="u" type="number" inputmode="numeric" placeholder="1000000000">
+ <label class="lbl" for="u">Supply</label><input id="u" type="text" inputmode="numeric" data-num="int" autocomplete="off" placeholder="1000000000">
  <span class="lbl">Token Image <small>(PNG)</small></span><label class="drop" id="dz" for="i"><input id="i" type="file" accept="image/png"><svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg><b>Upload Token Image</b><small>Tap to choose a PNG. Square, 512×512 is ideal.</small></label>
  <label class="lbl" for="x">Description</label><textarea id="x" placeholder="Describe your token"></textarea>
  <div class="tg"><div><b>Revoke Freeze <small>(Required)</small></b><small>Allows you to create a liquidity pool · ${f(P.revokeFreeze)}</small></div><label class="sw"><input type="checkbox" checked disabled aria-label="Revoke freeze"><i></i></label></div>
@@ -157,14 +159,14 @@ create:()=>`<div class="box">
  <h2>Revoke Mint Authority</h2><p>Guarantees no more tokens than the total supply can ever exist. Buyers trust this. Cost: <b>${f(P.revokeMint)}</b>.</p></div>`,
 
 authority:()=>`<div class="box"><h3>Revoke Mint Authority</h3><p>Permanently removes the ability to create more tokens, so the total supply can never grow. This gives buyers confidence.</p>${sel("a1","Select Token")}${wb}<p class="total">Total cost: <b>${f(P.revokeMint)}</b></p></div>
- <div class="box"><h3>Mint Token</h3><p>Create additional tokens and add them to the total supply. You must still hold the mint authority.</p>${sel("a2","Select Token")}<label class="lbl" for="a3">Amount</label><input id="a3" type="number" inputmode="numeric" placeholder="Enter Amount To Mint">${wb}<p class="total">Total cost: <b>${f(P.mintMore)}</b></p></div>
+ <div class="box"><h3>Mint Token</h3><p>Create additional tokens and add them to the total supply. You must still hold the mint authority.</p>${sel("a2","Select Token")}<label class="lbl" for="a3">Amount</label><input id="a3" type="text" inputmode="decimal" data-num="dec" autocomplete="off" placeholder="Enter Amount To Mint">${wb}<p class="total">Total cost: <b>${f(P.mintMore)}</b></p></div>
  <div class="txt"><h1>Revoke &amp; Mint</h1><h2>Revoke Mint Authority</h2><p>Revoking is permanent. After it, no one, including you, can mint more of this token. Do it once your supply is final.</p><h2>Mint Token</h2><p>Use this only while you still hold the mint authority. Minting after launch can lower the value of existing holders, so announce supply changes openly.</p></div>`,
 
 liquidity:()=>`<div class="box"><h3>Initial Liquidity</h3><div class="seg" style="margin:8px 0 2px"><button class="on" type="button" style="flex:1">CPMM</button><button type="button" id="v4" style="flex:1">AMM v4</button></div>
  ${tok("b","Base Token")}${tok("q","Quote Token")}
  <label class="lbl" for="ip">Initial Price</label><input id="ip" placeholder="Auto-calculated from amounts" readonly>
  <label class="lbl" for="ft2">Fee Tier</label><select id="ft2"><option>0.25%</option><option>0.01%</option><option>0.05%</option><option>0.30%</option><option>1%</option></select>
- <button class="btn" data-w>Initialize Liquidity Pool</button><p class="total">Pool cost: <b>${f(P.pool)}</b></p></div>
+ <button class="btn" id="pb" data-w data-pool>Initialize Liquidity Pool</button><p class="total">Pool cost: <b>${f(P.pool)}</b> + your liquidity</p></div>
  <div class="txt"><h1>How To Create a Liquidity Pool</h1><ol><li>Select the token you just created.</li><li>Enter how many tokens go in the pool (95% or more is recommended).</li><li>Pick SOL as the quote token.</li><li>Enter the SOL amount to pair. 10+ SOL is recommended.</li><li>Choose the trading fee tier. Liquidity providers earn 84% of trading fees. 0.25% is recommended.</li><li>Click Initialize Liquidity Pool and approve.</li></ol><p>The SOL you add sets the starting price. To show liquidity as locked, burn your LP tokens on the Burn page.</p></div>`,
 
 swap:()=>`<div class="box"><h3>Swap Token</h3>${tk("s1","Sell")}${tk("s2","Buy")}${wb}</div>`,
@@ -201,9 +203,9 @@ document.addEventListener("keydown",e=>e.key==="Escape"&&menu(false));
 document.addEventListener("click",e=>{const w=e.target.closest("[data-w]");if(!w)return;
  if(w.id==="wp"&&W.pk)return disconnect();
  if(!W.pk)return openWallets();
- if(w.hasAttribute("data-create"))createToken();else toast("This tool is added in the next step.")});
+ if(w.hasAttribute("data-create"))createToken();else if(w.hasAttribute("data-pool"))createPool();else toast("This tool is added in the next step.")});
 document.querySelectorAll(".bn").forEach(n=>n.textContent=CONFIG.brand);
-$("#em").textContent=CONFIG.email;$("#em").href="mailto:"+CONFIG.email;$("#ft").textContent="© "+new Date().getFullYear()+" "+CONFIG.brand+" · v13";
+$("#em").textContent=CONFIG.email;$("#em").href="mailto:"+CONFIG.email;$("#ft").textContent="© "+new Date().getFullYear()+" "+CONFIG.brand+" · v14";
 
 /* ===== Step 2: wallet + token creation ===== */
 const W={pk:null,prov:null},N=CONFIG.network,CL=N==="mainnet-beta"?"":"?cluster="+N;
@@ -218,7 +220,7 @@ function legacy(){const p=[];[["Phantom",window.phantom?.solana,"isPhantom"],["S
 function wallets(){const l=STD.map(w=>({name:w.name,icon:w.icon,std:w}));legacy().forEach(w=>{if(!l.some(x=>x.name.toLowerCase()===w.name.toLowerCase()))l.push(w)});return l}
 function modal(h){const m=$("#modal");m.innerHTML=`<div class="mc">${h}</div>`;m.classList.add("open");m.onclick=e=>{if(e.target===m)closeModal()}}
 function closeModal(){$("#modal").classList.remove("open")}
-function openWallets(){const L=wallets(),u=encodeURIComponent(location.href),r=encodeURIComponent(location.origin);
+async function openWallets(){let L=wallets();if(!L.length){await new Promise(z=>setTimeout(z,700));L=wallets()}if(L.length===1)return connect(L[0]);const u=encodeURIComponent(location.origin+location.pathname+"?wc=1"+(location.hash||"")),r=encodeURIComponent(location.origin);
  const row=(w,i)=>`<button class="btn alt wr" data-wi="${i}">${/^data:image\//.test(w.icon||"")?`<img src="${w.icon}" alt="" width="24" height="24">`:""}${esc(w.name)}</button>`;
  const ln=(c,h,t,ext)=>`<a class="btn ${c}" style="text-decoration:none" href="${h}"${ext?' target="_blank" rel="noopener"':""}>${t}</a>`;
  let h=`<h3>Select Wallet</h3>`;
@@ -227,17 +229,18 @@ function openWallets(){const L=wallets(),u=encodeURIComponent(location.href),r=e
  else h+=`<p>No Solana wallet detected in this browser. Install one, then refresh this page.</p>`+ln("","https://phantom.app/download","Install Phantom",1)+ln("alt","https://solflare.com/download","Install Solflare",1);
  modal(h+`<button class="link" id="mx">Cancel</button>`);
  $("#mx").onclick=closeModal;document.querySelectorAll("[data-wi]").forEach(b=>b.onclick=()=>connect(L[b.dataset.wi]))}
-async function connect(w){try{
- if(w.std){const {accounts}=await w.std.features["standard:connect"].connect(),a=(accounts&&accounts[0])||w.std.accounts[0];if(!a)throw new Error("No account");W.std=w.std;W.acc=a;W.prov=null;W.pk=new solanaWeb3.PublicKey(a.address)}
- else{const r=await w.legacy.connect();W.prov=w.legacy;W.std=null;W.pk=new solanaWeb3.PublicKey((r.publicKey||w.legacy.publicKey).toString())}
- closeModal();updateUI();toast(w.name+" connected")}catch(e){toast("Connection cancelled")}}
-async function disconnect(){try{if(W.std){const d=W.std.features["standard:disconnect"];if(d)await d.disconnect()}else await W.prov.disconnect()}catch(e){}W.pk=W.std=W.prov=W.acc=null;updateUI();toast("Wallet disconnected")}
+async function connect(w,silent){try{
+ if(w.std){const {accounts}=await w.std.features["standard:connect"].connect(silent?{silent:true}:undefined),a=(accounts&&accounts[0])||w.std.accounts[0];if(!a)throw new Error("No account");W.std=w.std;W.acc=a;W.prov=null;W.pk=new solanaWeb3.PublicKey(a.address)}
+ else{const r=await w.legacy.connect(silent?{onlyIfTrusted:true}:undefined);W.prov=w.legacy;W.std=null;W.pk=new solanaWeb3.PublicKey((r.publicKey||w.legacy.publicKey).toString())}
+ try{localStorage.setItem("wl",w.name)}catch(e){}
+ closeModal();updateUI();if(!silent)toast(w.name+" connected")}catch(e){if(!silent)toast("Connection cancelled")}}
+async function disconnect(){try{if(W.std){const d=W.std.features["standard:disconnect"];if(d)await d.disconnect()}else await W.prov.disconnect()}catch(e){}W.pk=W.std=W.prov=W.acc=null;try{localStorage.removeItem("wl")}catch(e){}updateUI();toast("Wallet disconnected")}
 async function sendTx(tx,conn){
  if(W.std){const f=W.std.features["solana:signTransaction"];if(!f)throw new Error("This wallet cannot sign transactions.");
   const [o]=await f.signTransaction({account:W.acc,transaction:tx.serialize({requireAllSignatures:false,verifySignatures:false}),chain:"solana:"+(N==="mainnet-beta"?"mainnet":N)});
   return conn.sendRawTransaction(o.signedTransaction)}
  const r=await W.prov.signAndSendTransaction(tx);return r.signature||r}
-function updateUI(){document.querySelectorAll("[data-w]").forEach(b=>{b.textContent=b.id==="wp"?(W.pk?short(W.pk.toString()):"Select Wallet"):W.pk?(b.hasAttribute("data-create")?"Create Token":"Coming In Next Step"):"Select Wallet"});if(location.hash==="#/liquidity"&&document.querySelector("#bs"))initLiq()}
+function updateUI(){document.querySelectorAll("[data-w]").forEach(b=>{b.textContent=b.id==="wp"?(W.pk?short(W.pk.toString()):"Select Wallet"):W.pk?(b.hasAttribute("data-create")?"Create Token":b.hasAttribute("data-pool")?"Initialize Liquidity Pool":"Coming In Next Step"):"Select Wallet"});if(location.hash==="#/liquidity"&&document.querySelector("#bs"))initLiq()}
 if(N!=="mainnet-beta")$("#ft").textContent+=" · "+N.toUpperCase();
 
 const MPL=()=>new solanaWeb3.PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s");
@@ -270,11 +273,56 @@ async function initLiq(){
  TOKS=toks;
  bs.innerHTML=(toks.length?'<option value="">Select Token</option>':'<option value="">No tokens in this wallet</option>')+toks.map((t,i)=>`<option value="${i}">${esc(t.label)}</option>`).join("");
  $("#qb").textContent="Balance "+sol.toFixed(4);
- const upd=()=>{const t=TOKS[bs.value],b=+$("#ba").value,q=+$("#qa").value;$("#bb").textContent="Balance "+(t?t.amount.toLocaleString("en-US"):0);$("#ip").value=t&&b>0&&q>0?"1 "+t.label.split(" · ")[0]+" = "+fmtP(q/b)+" SOL":""};
+ const upd=()=>{const t=TOKS[bs.value],b=+$("#ba").value,q=+$("#qa").value;$("#bb").textContent="Balance "+(t?t.amount:0);$("#ip").value=t&&b>0&&q>0?"1 "+t.label.split(" · ")[0]+" = "+fmtP(q/b)+" SOL":""};
  bs.onchange=()=>{const t=TOKS[bs.value];$("#ba").value=t?t.amount:"";upd()};
  $("#bm").onclick=()=>{if(!bs.value&&TOKS.length)bs.value="0";bs.onchange()};
  $("#qm").onclick=()=>{$("#qa").value=Math.max(0,+(sol-P.pool-0.05).toFixed(4))||"";upd()};
  $("#ba").oninput=upd;$("#qa").oninput=upd;upd()}
+
+/* ===== Pool creation (transaction is built by /api/create-pool, signed by the user's wallet) ===== */
+let FEEDUE=0;
+async function payFee(conn,lamports){const X=solanaWeb3,tx=new X.Transaction().add(X.SystemProgram.transfer({fromPubkey:W.pk,toPubkey:new X.PublicKey(CONFIG.feeWallet),lamports}));
+ const bh=await conn.getLatestBlockhash();tx.recentBlockhash=bh.blockhash;tx.feePayer=W.pk;
+ const sig=await sendTx(tx,conn);await conn.confirmTransaction({signature:sig,blockhash:bh.blockhash,lastValidBlockHeight:bh.lastValidBlockHeight},"confirmed");return sig}
+async function createPool(){
+ const X=solanaWeb3,bs=$("#bs"),t=bs&&TOKS[bs.value],tokAmt=$("#ba").value.trim(),solAmt=$("#qa").value.trim();
+ if(!t)return toast("Select your token first.");
+ if(!(+tokAmt>0)||!(+solAmt>0))return toast("Enter both amounts.");
+ if(+tokAmt>t.amount)return toast("Token amount is more than your balance.");
+ const btn=$("#pb"),st=x=>btn.textContent=x;btn.disabled=true;
+ try{
+  if(!window.solanaWeb3)throw new Error("Wallet libraries failed to load. Refresh the page and try again.");
+  const conn=new X.Connection(CONFIG.rpc,"confirmed"),me=W.pk,need=+solAmt+P.pool+0.02,bal0=await conn.getBalance(me);
+  if(bal0<need*X.LAMPORTS_PER_SOL)throw new Error("Not enough SOL on "+N+". You need about "+need.toFixed(2)+" SOL (your liquidity + "+f(P.pool)+" pool cost + network fees). Your balance: "+(bal0/1e9).toFixed(3)+" SOL.");
+  st("Preparing Pool…");
+  const r=await fetch(CONFIG.poolEndpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({owner:me.toString(),mint:t.mint,tokenAmount:tokAmt,solAmount:solAmt,feeTier:$("#ft2").value,network:N})});
+  const rt=await r.text();let j={};try{j=JSON.parse(rt)}catch(x){}
+  if(!r.ok||!j.tx)throw new Error(r.status===404?"Pool service not found (/api/create-pool). Upload api/create-pool.js, package.json and vercel.json to GitHub, then wait for the redeploy.":(j.error||"Pool service error (code "+r.status+")."));
+  const vtx=X.VersionedTransaction.deserialize(Uint8Array.from(atob(j.tx),c=>c.charCodeAt(0)));
+  st("Checking…");
+  const sim=await conn.simulateTransaction(vtx,{sigVerify:false,replaceRecentBlockhash:true});
+  if(sim.value.err){const lg=(sim.value.logs||[]).slice(-5).join(" | ");throw new Error("Pre-check failed: "+JSON.stringify(sim.value.err)+(lg?" | "+lg:""))}
+  st("Approve In Wallet…");
+  const sig=await sendTx(vtx,conn);
+  st("Confirming…");await conn.confirmTransaction(sig,"confirmed");
+  const bal1=await conn.getBalance(me),ray=Math.max(0,bal0-bal1-Math.round(+solAmt*X.LAMPORTS_PER_SOL));
+  FEEDUE=Math.max(0,Math.round(P.pool*X.LAMPORTS_PER_SOL)-ray);
+  let pending=false;
+  if(FEEDUE>0){try{st("Approve Service Fee…");await payFee(conn,FEEDUE);FEEDUE=0}catch(e){pending=true}}
+  const pool=esc(j.poolId||""),dx=N==="mainnet-beta"?`<a class="btn alt" style="text-decoration:none" target="_blank" rel="noopener" href="https://dexscreener.com/solana/${pool}">View On DexScreener</a>`:"";
+  modal(`<button class="mx" id="mxc" aria-label="Close">✕</button><h3 style="padding-right:40px">Pool Created!</h3><p>Your token can now be traded against SOL.</p>${pending?`<p style="color:var(--coral)">Service fee of ${(FEEDUE/1e9).toFixed(3)} SOL is still pending.</p><button class="btn" id="pf" type="button">Pay Service Fee</button>`:""}<label class="lbl">Pool Address</label><div class="cprow"><input readonly id="ma" value="${pool}"><button class="btn alt" id="cp" type="button">Copy</button></div><a class="btn" style="text-decoration:none" target="_blank" rel="noopener" href="https://solscan.io/account/${pool}${CL}">View Pool On Solscan</a><a class="btn alt" style="text-decoration:none" target="_blank" rel="noopener" href="https://solscan.io/tx/${sig}${CL}">View Transaction On Solscan</a>${dx}`);
+  $("#mxc").onclick=closeModal;
+  $("#cp").onclick=async()=>{try{await navigator.clipboard.writeText(j.poolId);toast("Address copied")}catch(e){$("#ma").select();toast("Select the address and copy it")}};
+  if($("#pf"))$("#pf").onclick=async()=>{try{await payFee(conn,FEEDUE);FEEDUE=0;$("#pf").remove();toast("Service fee paid")}catch(e){toast("Fee payment cancelled")}};
+ }catch(e){const m=(e&&e.message)||String(e);console.error(e);
+  if(/reject|denied|cancel/i.test(m))toast("Transaction cancelled.");
+  else{modal(`<h3>Could Not Create Pool</h3><p>${esc(m)}</p><button class="btn" id="mx2">Close</button>`);$("#mx2").onclick=closeModal}}
+ finally{btn.disabled=false;updateUI()}}
+document.addEventListener("input",e=>{const el=e.target,k=el.getAttribute&&el.getAttribute("data-num");if(!k)return;let v=el.value.replace(/[,\s_]/g,"");v=k==="int"?v.replace(/\D/g,""):v.replace(/[^\d.]/g,"").replace(/^(\d*\.\d*).*$/,"$1");if(v!==el.value)el.value=v});
+setTimeout(()=>{const q=new URLSearchParams(location.search).get("wc");let nm="";try{nm=localStorage.getItem("wl")||""}catch(e){}
+ const L=wallets();if(W.pk||!L.length)return;
+ if(q){history.replaceState(null,"",location.pathname+location.hash);if(L.length===1)connect(L[0]);else openWallets();return}
+ const m=L.find(x=>x.name===nm);if(m)connect(m,true)},900);
 /* Minimal SPL Token + Associated Token instructions (no extra library needed) */
 function makeSPL(){const X=solanaWeb3,K=s=>new X.PublicKey(s),TP=K("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),AP=K("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
  const ix=(p,keys,data)=>new X.TransactionInstruction({programId:p,keys,data}),k=(pubkey,isSigner,isWritable)=>({pubkey,isSigner,isWritable});
@@ -285,7 +333,7 @@ function makeSPL(){const X=solanaWeb3,K=s=>new X.PublicKey(s),TP=K("TokenkegQfeZ
   createMintToInstruction:(mint,dest,auth,amt)=>{const d=new Uint8Array(9);d[0]=7;new DataView(d.buffer).setBigUint64(1,BigInt(amt),true);return ix(TP,[k(mint,false,true),k(dest,false,true),k(auth,true,false)],d)},
   createSetAuthorityInstruction:(acct,cur,type)=>ix(TP,[k(acct,false,true),k(cur,true,false)],new Uint8Array([6,type,0]))}}
 async function createToken(){
- const g=id=>$("#"+id).value.trim(),name=g("n"),symbol=g("s"),dec=+g("d"),sup=g("u"),file=$("#i").files[0],revMint=$("#rm").checked;
+ const g=id=>$("#"+id).value.trim(),name=g("n"),symbol=g("s"),dec=+g("d"),sup=g("u").replace(/[,\s]/g,""),file=$("#i").files[0],revMint=$("#rm").checked;
  if(!name||name.length>32)return toast("Enter a token name (max 32 characters).");
  if(!symbol)return toast("Enter a symbol (max 8 characters).");
  if(!Number.isInteger(dec)||dec<0||dec>9)return toast("Decimals must be between 0 and 9.");
