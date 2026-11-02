@@ -103,6 +103,7 @@ footer{border-top:1px solid var(--line);padding:20px 30px calc(env(safe-area-ins
 .fld{margin-top:16px}.fh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;font-weight:700}.fh small{color:var(--muted);font-weight:400;font-size:.85rem}
 .sr{display:flex;gap:8px}.sr select{flex:1;min-width:0}.maxb{flex:none;min-height:42px;padding:0 16px;border-radius:14px;border:1px solid var(--rose);background:var(--field);color:var(--rose);font:700 .9rem var(--font);cursor:pointer}
 .seg{width:100%}.seg button{flex:1}
+input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none;border-color:var(--rose);box-shadow:0 0 0 2px rgba(255,210,31,.22)}
 </style>
 </head>
 <body>
@@ -202,7 +203,7 @@ document.addEventListener("click",e=>{const w=e.target.closest("[data-w]");if(!w
  if(!W.pk)return openWallets();
  if(w.hasAttribute("data-create"))createToken();else toast("This tool is added in the next step.")});
 document.querySelectorAll(".bn").forEach(n=>n.textContent=CONFIG.brand);
-$("#em").textContent=CONFIG.email;$("#em").href="mailto:"+CONFIG.email;$("#ft").textContent="© "+new Date().getFullYear()+" "+CONFIG.brand+" · v12";
+$("#em").textContent=CONFIG.email;$("#em").href="mailto:"+CONFIG.email;$("#ft").textContent="© "+new Date().getFullYear()+" "+CONFIG.brand+" · v13";
 
 /* ===== Step 2: wallet + token creation ===== */
 const W={pk:null,prov:null},N=CONFIG.network,CL=N==="mainnet-beta"?"":"?cluster="+N;
@@ -249,6 +250,7 @@ const dataUrl=f=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(
 
 /* ===== Liquidity form: load the user's own tokens ===== */
 let TOKS=[];
+const fmtP=x=>x>=1?String(+x.toFixed(6)):x.toFixed(12).replace(/0+$/,"").replace(/\.$/,"");
 async function loadTokens(conn){
  const X=solanaWeb3,r=await conn.getParsedTokenAccountsByOwner(W.pk,{programId:new X.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")});
  const list=r.value.map(v=>{const i=v.account.data.parsed.info;return{mint:i.mint,amount:i.tokenAmount.uiAmount||0,decimals:i.tokenAmount.decimals}}).filter(t=>t.amount>0);
@@ -268,7 +270,7 @@ async function initLiq(){
  TOKS=toks;
  bs.innerHTML=(toks.length?'<option value="">Select Token</option>':'<option value="">No tokens in this wallet</option>')+toks.map((t,i)=>`<option value="${i}">${esc(t.label)}</option>`).join("");
  $("#qb").textContent="Balance "+sol.toFixed(4);
- const upd=()=>{const t=TOKS[bs.value],b=+$("#ba").value,q=+$("#qa").value;$("#bb").textContent="Balance "+(t?t.amount:0);$("#ip").value=t&&b>0&&q>0?"1 "+t.label.split(" · ")[0]+" = "+(+(q/b).toPrecision(6))+" SOL":""};
+ const upd=()=>{const t=TOKS[bs.value],b=+$("#ba").value,q=+$("#qa").value;$("#bb").textContent="Balance "+(t?t.amount.toLocaleString("en-US"):0);$("#ip").value=t&&b>0&&q>0?"1 "+t.label.split(" · ")[0]+" = "+fmtP(q/b)+" SOL":""};
  bs.onchange=()=>{const t=TOKS[bs.value];$("#ba").value=t?t.amount:"";upd()};
  $("#bm").onclick=()=>{if(!bs.value&&TOKS.length)bs.value="0";bs.onchange()};
  $("#qm").onclick=()=>{$("#qa").value=Math.max(0,+(sol-P.pool-0.05).toFixed(4))||"";upd()};
