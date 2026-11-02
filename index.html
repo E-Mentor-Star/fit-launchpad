@@ -100,6 +100,9 @@ footer{border-top:1px solid var(--line);padding:20px 30px calc(env(safe-area-ins
 .mc{width:100%;max-width:380px;border:2px solid transparent;border-radius:26px;padding:20px 16px;background:linear-gradient(var(--card),var(--card)) padding-box,var(--grad) border-box}.mc .btn{margin-top:12px}.mc p{color:var(--muted)}.mc .btn.alt{background:var(--field);color:var(--text);border:1px solid var(--line)}
 .mc .wr{gap:10px;justify-content:flex-start;padding:0 14px}.wr img{border-radius:6px}
 .mc{position:relative}.mx{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--field);color:var(--text);font-size:1rem;cursor:pointer}.cprow{display:flex;gap:8px}.cprow input{flex:1;min-width:0}.cprow .btn{width:auto;margin-top:0;padding:0 16px}
+.fld{margin-top:16px}.fh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;font-weight:700}.fh small{color:var(--muted);font-weight:400;font-size:.85rem}
+.sr{display:flex;gap:8px}.sr select{flex:1;min-width:0}.maxb{flex:none;min-height:42px;padding:0 16px;border-radius:14px;border:1px solid var(--rose);background:var(--field);color:var(--rose);font:700 .9rem var(--font);cursor:pointer}
+.seg{width:100%}.seg button{flex:1}
 </style>
 </head>
 <body>
@@ -130,6 +133,7 @@ const FAQ=[["How much does it cost?",`Token creation is ${f(P.create)}. Revoke f
 ["Which wallets work?","Phantom, Solflare and other Solana wallets."]];
 
 const tk=(id,l)=>`<div class="tk"><div class="top"><span>${l}</span><span>Balance 0</span></div><div class="in"><input inputmode="decimal" placeholder="0" aria-label="${l} amount"><select aria-label="${l} token"><option>Select Token</option><option>SOL</option></select></div></div>`;
+const tok=(id,l)=>`<div class="fld"><div class="fh"><span>${l}</span><small id="${id}b">Balance 0</small></div><div class="sr"><select id="${id}s" aria-label="${l}"><option value="">Select Token</option></select><button class="maxb" id="${id}m" type="button">Max</button></div><input id="${id}a" inputmode="decimal" placeholder="0.00" style="margin-top:8px" aria-label="${l} amount"></div>`;
 const sel=(id,l)=>`<label class="lbl" for="${id}">${l}</label><select id="${id}"><option>Select Token</option></select>`;
 const wb=`<button class="btn" data-w>Select Wallet</button>`;
 
@@ -155,9 +159,9 @@ authority:()=>`<div class="box"><h3>Revoke Mint Authority</h3><p>Permanently rem
  <div class="box"><h3>Mint Token</h3><p>Create additional tokens and add them to the total supply. You must still hold the mint authority.</p>${sel("a2","Select Token")}<label class="lbl" for="a3">Amount</label><input id="a3" type="number" inputmode="numeric" placeholder="Enter Amount To Mint">${wb}<p class="total">Total cost: <b>${f(P.mintMore)}</b></p></div>
  <div class="txt"><h1>Revoke &amp; Mint</h1><h2>Revoke Mint Authority</h2><p>Revoking is permanent. After it, no one, including you, can mint more of this token. Do it once your supply is final.</p><h2>Mint Token</h2><p>Use this only while you still hold the mint authority. Minting after launch can lower the value of existing holders, so announce supply changes openly.</p></div>`,
 
-liquidity:()=>`<div class="box"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px"><h3 style="margin:0">Initial Liquidity</h3><div class="seg" style="margin:0"><button class="on" type="button">CPMM</button><button type="button" id="v4">AMM v4</button></div></div>
- ${tk("b","Base Token")}${tk("q","Quote Token")}
- <label class="lbl">Initial Price</label><input placeholder="Auto-calculated from amounts" readonly>
+liquidity:()=>`<div class="box"><h3>Initial Liquidity</h3><div class="seg" style="margin:8px 0 2px"><button class="on" type="button" style="flex:1">CPMM</button><button type="button" id="v4" style="flex:1">AMM v4</button></div>
+ ${tok("b","Base Token")}${tok("q","Quote Token")}
+ <label class="lbl" for="ip">Initial Price</label><input id="ip" placeholder="Auto-calculated from amounts" readonly>
  <label class="lbl" for="ft2">Fee Tier</label><select id="ft2"><option>0.25%</option><option>0.01%</option><option>0.05%</option><option>0.30%</option><option>1%</option></select>
  <button class="btn" data-w>Initialize Liquidity Pool</button><p class="total">Pool cost: <b>${f(P.pool)}</b></p></div>
  <div class="txt"><h1>How To Create a Liquidity Pool</h1><ol><li>Select the token you just created.</li><li>Enter how many tokens go in the pool (95% or more is recommended).</li><li>Pick SOL as the quote token.</li><li>Enter the SOL amount to pair. 10+ SOL is recommended.</li><li>Choose the trading fee tier. Liquidity providers earn 84% of trading fees. 0.25% is recommended.</li><li>Click Initialize Liquidity Pool and approve.</li></ol><p>The SOL you add sets the starting price. To show liquidity as locked, burn your LP tokens on the Burn page.</p></div>`,
@@ -198,7 +202,7 @@ document.addEventListener("click",e=>{const w=e.target.closest("[data-w]");if(!w
  if(!W.pk)return openWallets();
  if(w.hasAttribute("data-create"))createToken();else toast("This tool is added in the next step.")});
 document.querySelectorAll(".bn").forEach(n=>n.textContent=CONFIG.brand);
-$("#em").textContent=CONFIG.email;$("#em").href="mailto:"+CONFIG.email;$("#ft").textContent="© "+new Date().getFullYear()+" "+CONFIG.brand+" · v11";
+$("#em").textContent=CONFIG.email;$("#em").href="mailto:"+CONFIG.email;$("#ft").textContent="© "+new Date().getFullYear()+" "+CONFIG.brand+" · v12";
 
 /* ===== Step 2: wallet + token creation ===== */
 const W={pk:null,prov:null},N=CONFIG.network,CL=N==="mainnet-beta"?"":"?cluster="+N;
@@ -232,7 +236,7 @@ async function sendTx(tx,conn){
   const [o]=await f.signTransaction({account:W.acc,transaction:tx.serialize({requireAllSignatures:false,verifySignatures:false}),chain:"solana:"+(N==="mainnet-beta"?"mainnet":N)});
   return conn.sendRawTransaction(o.signedTransaction)}
  const r=await W.prov.signAndSendTransaction(tx);return r.signature||r}
-function updateUI(){document.querySelectorAll("[data-w]").forEach(b=>{b.textContent=b.id==="wp"?(W.pk?short(W.pk.toString()):"Select Wallet"):W.pk?(b.hasAttribute("data-create")?"Create Token":"Coming In Next Step"):"Select Wallet"})}
+function updateUI(){document.querySelectorAll("[data-w]").forEach(b=>{b.textContent=b.id==="wp"?(W.pk?short(W.pk.toString()):"Select Wallet"):W.pk?(b.hasAttribute("data-create")?"Create Token":"Coming In Next Step"):"Select Wallet"});if(location.hash==="#/liquidity"&&document.querySelector("#bs"))initLiq()}
 if(N!=="mainnet-beta")$("#ft").textContent+=" · "+N.toUpperCase();
 
 const MPL=()=>new solanaWeb3.PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s");
@@ -242,6 +246,33 @@ function metaIx(mint,me,name,symbol,uri){const X=solanaWeb3,pda=X.PublicKey.find
  return new X.TransactionInstruction({programId:MPL(),data:d,keys:[{pubkey:pda,isSigner:false,isWritable:true},{pubkey:mint,isSigner:false,isWritable:false},{pubkey:me,isSigner:true,isWritable:false},{pubkey:me,isSigner:true,isWritable:true},{pubkey:me,isSigner:true,isWritable:false},{pubkey:X.SystemProgram.programId,isSigner:false,isWritable:false}]})}
 const dataUrl=f=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=no;r.readAsDataURL(f)});
 
+
+/* ===== Liquidity form: load the user's own tokens ===== */
+let TOKS=[];
+async function loadTokens(conn){
+ const X=solanaWeb3,r=await conn.getParsedTokenAccountsByOwner(W.pk,{programId:new X.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")});
+ const list=r.value.map(v=>{const i=v.account.data.parsed.info;return{mint:i.mint,amount:i.tokenAmount.uiAmount||0,decimals:i.tokenAmount.decimals}}).filter(t=>t.amount>0);
+ const mp=MPL(),enc=new TextEncoder(),pdas=list.map(t=>X.PublicKey.findProgramAddressSync([enc.encode("metadata"),mp.toBytes(),new X.PublicKey(t.mint).toBytes()],mp)[0]);
+ const infos=pdas.length?await conn.getMultipleAccountsInfo(pdas):[];
+ list.forEach((t,i)=>{t.label=short(t.mint);const d=infos[i]&&infos[i].data;if(d){try{const dv=new DataView(d.buffer,d.byteOffset,d.byteLength);let o=65;const rd=()=>{const n=dv.getUint32(o,true);o+=4;const x=new TextDecoder().decode(d.subarray(o,o+n)).replace(/\0/g,"").trim();o+=n;return x};const nm=rd(),sy=rd();if(sy||nm)t.label=(sy||nm)+" · "+short(t.mint)}catch(e){}}});
+ return list}
+async function initLiq(){
+ const bs=$("#bs"),qs=$("#qs");if(!bs)return;
+ qs.innerHTML='<option value="SOL">SOL</option>';qs.disabled=true;
+ if(!W.pk){bs.innerHTML='<option value="">Connect wallet first</option>';return}
+ bs.innerHTML='<option value="">Loading…</option>';
+ let toks=[],sol=0;
+ try{const conn=new solanaWeb3.Connection(CONFIG.rpc,"confirmed");[toks,sol]=await Promise.all([loadTokens(conn),conn.getBalance(W.pk).then(l=>l/1e9)])}
+ catch(e){if($("#bs"))$("#bs").innerHTML='<option value="">Could not load tokens</option>';return}
+ if(!$("#bs"))return;
+ TOKS=toks;
+ bs.innerHTML=(toks.length?'<option value="">Select Token</option>':'<option value="">No tokens in this wallet</option>')+toks.map((t,i)=>`<option value="${i}">${esc(t.label)}</option>`).join("");
+ $("#qb").textContent="Balance "+sol.toFixed(4);
+ const upd=()=>{const t=TOKS[bs.value],b=+$("#ba").value,q=+$("#qa").value;$("#bb").textContent="Balance "+(t?t.amount:0);$("#ip").value=t&&b>0&&q>0?"1 "+t.label.split(" · ")[0]+" = "+(+(q/b).toPrecision(6))+" SOL":""};
+ bs.onchange=()=>{const t=TOKS[bs.value];$("#ba").value=t?t.amount:"";upd()};
+ $("#bm").onclick=()=>{if(!bs.value&&TOKS.length)bs.value="0";bs.onchange()};
+ $("#qm").onclick=()=>{$("#qa").value=Math.max(0,+(sol-P.pool-0.05).toFixed(4))||"";upd()};
+ $("#ba").oninput=upd;$("#qa").oninput=upd;upd()}
 /* Minimal SPL Token + Associated Token instructions (no extra library needed) */
 function makeSPL(){const X=solanaWeb3,K=s=>new X.PublicKey(s),TP=K("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),AP=K("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
  const ix=(p,keys,data)=>new X.TransactionInstruction({programId:p,keys,data}),k=(pubkey,isSigner,isWritable)=>({pubkey,isSigner,isWritable});
