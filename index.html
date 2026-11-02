@@ -99,6 +99,7 @@ footer{border-top:1px solid var(--line);padding:20px 30px calc(env(safe-area-ins
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;padding:24px;z-index:50}.modal.open{display:flex}
 .mc{width:100%;max-width:380px;border:2px solid transparent;border-radius:26px;padding:20px 16px;background:linear-gradient(var(--card),var(--card)) padding-box,var(--grad) border-box}.mc .btn{margin-top:12px}.mc p{color:var(--muted)}.mc .btn.alt{background:var(--field);color:var(--text);border:1px solid var(--line)}
 .mc .wr{gap:10px;justify-content:flex-start;padding:0 14px}.wr img{border-radius:6px}
+.mc{position:relative}.mx{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--field);color:var(--text);font-size:1rem;cursor:pointer}.cprow{display:flex;gap:8px}.cprow input{flex:1;min-width:0}.cprow .btn{width:auto;margin-top:0;padding:0 16px}
 </style>
 </head>
 <body>
@@ -197,7 +198,7 @@ document.addEventListener("click",e=>{const w=e.target.closest("[data-w]");if(!w
  if(!W.pk)return openWallets();
  if(w.hasAttribute("data-create"))createToken();else toast("This tool is added in the next step.")});
 document.querySelectorAll(".bn").forEach(n=>n.textContent=CONFIG.brand);
-$("#em").textContent=CONFIG.email;$("#em").href="mailto:"+CONFIG.email;$("#ft").textContent="© "+new Date().getFullYear()+" "+CONFIG.brand+" · v10";
+$("#em").textContent=CONFIG.email;$("#em").href="mailto:"+CONFIG.email;$("#ft").textContent="© "+new Date().getFullYear()+" "+CONFIG.brand+" · v11";
 
 /* ===== Step 2: wallet + token creation ===== */
 const W={pk:null,prov:null},N=CONFIG.network,CL=N==="mainnet-beta"?"":"?cluster="+N;
@@ -291,7 +292,10 @@ async function createToken(){
   st("Confirming…");
   await conn.confirmTransaction({signature:sig,blockhash:bh.blockhash,lastValidBlockHeight:bh.lastValidBlockHeight},"confirmed");
   const a=mint.publicKey.toString();
-  modal(`<h3>Token Created!</h3><p>Your ${esc(symbol)} supply is now in your wallet.</p><label class="lbl">Mint Address</label><input readonly value="${a}" onclick="this.select()"><a class="btn" style="text-decoration:none" target="_blank" rel="noopener" href="https://solscan.io/token/${a}${CL}">View On Solscan</a><a class="btn alt" style="text-decoration:none" href="#/liquidity" onclick="closeModal()">Create Liquidity Pool</a>`);
+  modal(`<button class="mx" id="mxc" aria-label="Close">✕</button><h3 style="padding-right:40px">Token Created!</h3><p>Your ${esc(symbol)} supply is now in your wallet.</p><label class="lbl">Token Address</label><div class="cprow"><input readonly id="ma" value="${a}"><button class="btn alt" id="cp" type="button">Copy</button></div><a class="btn" style="text-decoration:none" target="_blank" rel="noopener" href="https://solscan.io/token/${a}${CL}">View Token On Solscan</a><a class="btn alt" style="text-decoration:none" target="_blank" rel="noopener" href="https://solscan.io/tx/${sig}${CL}">View Transaction On Solscan</a><a class="btn alt" style="text-decoration:none" href="#/liquidity" id="lp">Create Liquidity Pool</a><button class="btn alt" id="again" type="button">Create Another Token</button>`);
+  $("#mxc").onclick=closeModal;$("#lp").onclick=closeModal;
+  $("#cp").onclick=async()=>{try{await navigator.clipboard.writeText(a);toast("Address copied")}catch(e){$("#ma").select();toast("Select the address and copy it")}};
+  $("#again").onclick=()=>{closeModal();route()};
  }catch(e){const m=(e&&e.message)||String(e);console.error(e);
   if(/reject|denied|cancel/i.test(m))toast("Transaction cancelled.");
   else{modal(`<h3>Could Not Create Token</h3><p>${esc(m)}</p><button class="btn" id="mx2">Close</button>`);$("#mx2").onclick=closeModal}}
