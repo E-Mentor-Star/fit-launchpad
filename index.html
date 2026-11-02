@@ -197,7 +197,7 @@ document.addEventListener("click",e=>{const w=e.target.closest("[data-w]");if(!w
  if(!W.pk)return openWallets();
  if(w.hasAttribute("data-create"))createToken();else toast("This tool is added in the next step.")});
 document.querySelectorAll(".bn").forEach(n=>n.textContent=CONFIG.brand);
-$("#em").textContent=CONFIG.email;$("#em").href="mailto:"+CONFIG.email;$("#ft").textContent="© "+new Date().getFullYear()+" "+CONFIG.brand+" · v9";
+$("#em").textContent=CONFIG.email;$("#em").href="mailto:"+CONFIG.email;$("#ft").textContent="© "+new Date().getFullYear()+" "+CONFIG.brand+" · v10";
 
 /* ===== Step 2: wallet + token creation ===== */
 const W={pk:null,prov:null},N=CONFIG.network,CL=N==="mainnet-beta"?"":"?cluster="+N;
@@ -242,7 +242,7 @@ function metaIx(mint,me,name,symbol,uri){const X=solanaWeb3,pda=X.PublicKey.find
 const dataUrl=f=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=no;r.readAsDataURL(f)});
 
 /* Minimal SPL Token + Associated Token instructions (no extra library needed) */
-function makeSPL(){const X=solanaWeb3,K=s=>new X.PublicKey(s),TP=K("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),AP=K("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLBe8jyL");
+function makeSPL(){const X=solanaWeb3,K=s=>new X.PublicKey(s),TP=K("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),AP=K("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
  const ix=(p,keys,data)=>new X.TransactionInstruction({programId:p,keys,data}),k=(pubkey,isSigner,isWritable)=>({pubkey,isSigner,isWritable});
  return{MINT_SIZE:82,TOKEN_PROGRAM_ID:TP,AuthorityType:{MintTokens:0},
   getAssociatedTokenAddressSync:(mint,owner)=>X.PublicKey.findProgramAddressSync([owner.toBytes(),TP.toBytes(),mint.toBytes()],AP)[0],
